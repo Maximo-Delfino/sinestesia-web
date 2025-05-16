@@ -4,6 +4,7 @@ import datetime
 import math
 import json
 import os
+import requests  # Asegúrate de que este paquete esté instalado
 
 app = Flask(__name__)
 
@@ -61,6 +62,7 @@ def guardar():
     }
 
     guardar_resultado_json(datos_guardar)
+    enviar_a_google_forms(datos_guardar)
 
     return jsonify({
         "mensaje": "Guardado exitosamente",
@@ -68,8 +70,7 @@ def guardar():
         "promedio_historico": promedio_historico
     })
 
-
-# Función auxiliar para guardar resultados
+# Función auxiliar para guardar resultados localmente
 def guardar_resultado_json(data_nuevo):
     ruta = "data/resultados.json"
 
@@ -83,6 +84,23 @@ def guardar_resultado_json(data_nuevo):
 
     with open(ruta, "w") as f:
         json.dump(datos, f, indent=2)
+
+# Función auxiliar para enviar a Google Forms por webhook
+def enviar_a_google_forms(datos):
+    webhook_url = "https://script.google.com/macros/s/AKfycbyYWhINPfPG4rVxyrYMZv7C248PR-lJQWmkm9InOctT41UFbkJTEWpaDOaRKbFFGGw8wA/exec"
+
+    payload = {
+        "timestamp": datos["timestamp"],
+        "secuencia": datos["secuencia"],
+        "round1": datos["round1"],
+        "round2": datos["round2"],
+        "distancia_promedio": datos["distancia_promedio"]
+    }
+
+    try:
+        requests.post(webhook_url, json=payload)
+    except Exception as e:
+        print(f"Error al enviar a Google Forms: {e}")
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0")
