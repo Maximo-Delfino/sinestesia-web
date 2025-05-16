@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Test de Sinestesia</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <div class="container">
+    <div id="consigna">Selecciona el color que te parezca que corresponde al siguiente símbolo:</div>
+    <div id="symbol-display">A</div>
+    <div id="contador"></div>
+    
+    <input type="color" id="color-picker" value="#000000" />
+    <br />
+    <button id="confirmar-btn" disabled>Confirmar Elección</button>
+  </div>
+
+  <script>
+    const sequence = {{ sequence|tojson }};
+    const N_TOTAL = sequence.length;
+    let currentIndex = 0;
+
+    const symbolDisplay = document.getElementById("symbol-display");
+    const contador = document.getElementById("contador");
+    const colorPicker = document.getElementById("color-picker");
+    const confirmarBtn = document.getElementById("confirmar-btn");
+
+    let round = 1;
+    let responses = {1: [], 2: []};
+
+    // Mostrar símbolo y contador
+    function updateDisplay() {
+      if (currentIndex >= N_TOTAL) {
+        if (round === 1) {
+          round = 2;
+          currentIndex = 0;
+          alert("Ronda 1 completada. Vamos con la Ronda 2.");
+          resetForRound();
+        } else {
+          finishTest();
+          return;
+        }
+      }
+      symbolDisplay.textContent = sequence[currentIndex];
+      symbolDisplay.style.color = "#000000"; // Reset color a negro
+      symbolDisplay.style.fontSize = "12em"; // Letra grande
+      contador.textContent = `Símbolos restantes: ${N_TOTAL - currentIndex}`;
+      confirmarBtn.disabled = true;
+      colorPicker.value = "#000000"; // reset color picker
+    }
+
+    // Cuando cambias el color, colorea la letra
+    colorPicker.addEventListener("input", () => {
+      symbolDisplay.style.color = colorPicker.value;
+      confirmarBtn.disabled = false;
+    });
+
+    // Al confirmar, guardar y avanzar
+    confirmarBtn.addEventListener("click", () => {
+      // Guardar la respuesta actual (símbolo y color en RGB)
+      const hex = colorPicker.value;
+      const rgb = hexToRgb(hex);
+      responses[round].push([sequence[currentIndex], [rgb.r, rgb.g, rgb.b]]);
+      currentIndex++;
+      updateDisplay();
+    });
+
+    // Convertir hex a RGB
+    function hexToRgb(hex) {
+      let bigint = parseInt(hex.substring(1), 16);
+      let r = (bigint >> 16) & 255;
+      let g = (bigint >> 8) & 255;
+      let b = bigint & 255;
+      return { r, g, b };
+    }
+
+    // Preparar para la ronda 2
+    function resetForRound() {
+      contador.textContent = `Símbolos restantes: ${N_TOTAL}`;
+      symbolDisplay.style.color = "#000000";
+      symbolDisplay.style.fontSize = "12em";
+      confirmarBtn.disabled = true;
+      colorPicker.value = "#000000";
+      updateDisplay();
+    }
+
+    // Finalizar test y enviar datos al servidor
+    function finishTest() {
+      symbolDisplay.textContent = "";
+      contador.textContent = "";
+      confirmarBtn.disabled = true;
+      colorPicker.style.display = "none";
+      document.getElementById("consigna").textContent = "Procesando resultados...";
+
+      fetch("/guardar", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          sequence: sequence,
+          round1: responses[1],
+          round2: responses[2]
+        })
+      })
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("consigna").textContent =
+            `¡Test completado! Tu consistencia promedio: ${data.promedio_usuario}, Consistencia histórica: ${data.promedio_historico}`;
+        })
+        .catch(() => {
+          document.getElementById("consigna").textContent =
+            "Error al guardar resultados. Intenta nuevamente.";
+        });
+    }
+
+    // Inicializar
+    updateDisplay();
+  </script>
+</body>
+</html>

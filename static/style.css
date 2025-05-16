@@ -1,0 +1,54 @@
+body {
+  background-color: #ffffff;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  max-width: 600px;
+  margin: auto;
+  text-align: center;
+  padding: 2em;
+}
+
+#consigna {
+  font-size: 1.8em;
+  margin-bottom: 1.5em;
+  color: #333;
+}
+
+#symbol-display {
+  font-size: 12em; /* Más grande */
+  font-weight: bold;
+  margin-bottom: 0.3em;
+  transition: color 0.3s ease;
+}
+
+#contador {
+  font-size: 1.5em;
+  margin-bottom: 2em;
+}
+
+#color-picker {
+  width: 90%;
+  height: 100px;
+  border: none;
+  margin-bottom: 1em;
+  background: none;
+  padding: 0;
+}
+
+#confirmar-btn {
+  padding: 1.5em 2.5em;
+  font-size: 1.5em;
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+#confirmar-btn:hover {
+  background-color: #0056b3;
+}
