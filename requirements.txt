@@ -1,4 +1,4 @@
-Flask
-openpyxl
+Flask==2.2.5
 gunicorn
+
 
