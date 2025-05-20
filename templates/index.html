@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Test de Sinestesia</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
 </head>
@@ -21,53 +21,15 @@
     const sequence = {{ sequence|tojson }};
     const N_TOTAL = sequence.length;
     let currentIndex = 0;
+    let round = 1;
+    let responses = { 1: [], 2: [] };
 
     const symbolDisplay = document.getElementById("symbol-display");
     const contador = document.getElementById("contador");
     const colorPicker = document.getElementById("color-picker");
     const confirmarBtn = document.getElementById("confirmar-btn");
+    const consigna = document.getElementById("consigna");
 
-    let round = 1;
-    let responses = {1: [], 2: []};
-
-    // Mostrar símbolo y contador
-    function updateDisplay() {
-      if (currentIndex >= N_TOTAL) {
-        if (round === 1) {
-          round = 2;
-          currentIndex = 0;
-          alert("Ronda 1 completada. Vamos con la Ronda 2.");
-          resetForRound();
-        } else {
-          finishTest();
-          return;
-        }
-      }
-      symbolDisplay.textContent = sequence[currentIndex];
-      symbolDisplay.style.color = "#000000"; // Reset color a negro
-      symbolDisplay.style.fontSize = "12em"; // Letra grande
-      contador.textContent = `Símbolos restantes: ${N_TOTAL - currentIndex}`;
-      confirmarBtn.disabled = true;
-      colorPicker.value = "#000000"; // reset color picker
-    }
-
-    // Cuando cambias el color, colorea la letra
-    colorPicker.addEventListener("input", () => {
-      symbolDisplay.style.color = colorPicker.value;
-      confirmarBtn.disabled = false;
-    });
-
-    // Al confirmar, guardar y avanzar
-    confirmarBtn.addEventListener("click", () => {
-      // Guardar la respuesta actual (símbolo y color en RGB)
-      const hex = colorPicker.value;
-      const rgb = hexToRgb(hex);
-      responses[round].push([sequence[currentIndex], [rgb.r, rgb.g, rgb.b]]);
-      currentIndex++;
-      updateDisplay();
-    });
-
-    // Convertir hex a RGB
     function hexToRgb(hex) {
       let bigint = parseInt(hex.substring(1), 16);
       let r = (bigint >> 16) & 255;
@@ -76,29 +38,57 @@
       return { r, g, b };
     }
 
-    // Preparar para la ronda 2
-    function resetForRound() {
-      contador.textContent = `Símbolos restantes: ${N_TOTAL}`;
+    function updateDisplay() {
+      if (currentIndex >= N_TOTAL) {
+        if (round === 1) {
+          round = 2;
+          currentIndex = 0;
+          alert("Ronda 1 completada. Vamos con la Ronda 2.");
+          consigna.textContent = "Ronda 2: Selecciona nuevamente los colores para los mismos símbolos.";
+        } else {
+          finishTest();
+          return;
+        }
+      }
+
+      symbolDisplay.textContent = sequence[currentIndex];
       symbolDisplay.style.color = "#000000";
       symbolDisplay.style.fontSize = "12em";
-      confirmarBtn.disabled = true;
+      contador.textContent = `Símbolos restantes: ${N_TOTAL - currentIndex}`;
       colorPicker.value = "#000000";
-      updateDisplay();
+      confirmarBtn.disabled = true;
     }
 
-    // Finalizar test y enviar datos al servidor
+    colorPicker.addEventListener("input", () => {
+      const color = colorPicker.value;
+      symbolDisplay.style.color = color;
+      if (color !== "#000000") {
+        confirmarBtn.disabled = false;
+      } else {
+        confirmarBtn.disabled = true;
+      }
+    });
+
+    confirmarBtn.addEventListener("click", () => {
+      const hex = colorPicker.value;
+      const rgb = hexToRgb(hex);
+      const symbol = sequence[currentIndex];
+
+      responses[round].push([symbol, [rgb.r, rgb.g, rgb.b]]);
+      currentIndex++;
+      updateDisplay();
+    });
+
     function finishTest() {
       symbolDisplay.textContent = "";
       contador.textContent = "";
       confirmarBtn.disabled = true;
       colorPicker.style.display = "none";
-      document.getElementById("consigna").textContent = "Procesando resultados...";
+      consigna.textContent = "Procesando resultados...";
 
       fetch("/guardar", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sequence: sequence,
           round1: responses[1],
@@ -107,16 +97,16 @@
       })
         .then(res => res.json())
         .then(data => {
-          document.getElementById("consigna").textContent =
-            `¡Test completado! Tu consistencia promedio: ${data.promedio_usuario}, Consistencia histórica: ${data.promedio_historico}`;
+          consigna.textContent =
+            `¡Test completado!\nTu consistencia promedio: ${data.promedio_usuario}\nPromedio histórico: ${data.promedio_historico}`;
         })
         .catch(() => {
-          document.getElementById("consigna").textContent =
+          consigna.textContent =
             "Error al guardar resultados. Intenta nuevamente.";
         });
     }
 
-    // Inicializar
+    // Iniciar
     updateDisplay();
   </script>
 </body>
